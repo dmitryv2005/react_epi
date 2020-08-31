@@ -5,6 +5,9 @@ import Epidemiology from '../../components/Epidemiology/Epidemiology';
 import BuildControls from '../../components/Epidemiology/BuildControls/BuildControls';
 import Modal from '../../components/UI/Modal/Modal';
 import OrderSummary from '../../components/Epidemiology/OrderSummary/OrderSummary';
+import axios from '../../axios-orders';
+import withErrorHandler from '../../hoc/WithErrorHandler/withErrorHandler';
+import Spinner from '../../components/UI/Spinner/Spinner';
 
 const ITEMS_PRICES = {
     salad: 0.5,
@@ -15,15 +18,27 @@ const ITEMS_PRICES = {
 
 class EpiBuilder extends Component {
     state = {
-        items: {
-            salad: 1,
-            bacon: 1,
-            cheese: 2,
-            meat: 1
-        },
+        // items: {
+        //     salad: 1,
+        //     bacon: 1,
+        //     cheese: 2,
+        //     meat: 1
+        // },
+        itesm: null,
         totalPrice: 4,
         purchasable: true,
-        purchasing: false
+        purchasing: false,
+        loading: false,
+        error: false
+    }
+
+    componentDidMount () {
+        axios.get('https://react-my-first-project-1679c.firebaseio.com/Itesms.json')
+            .then(response => {
+                this.setState({items: response.data})
+            }).catch(error => {
+                this.setState({error: true})
+            });
     }
 
     updatePurchaseState (items) {
@@ -75,7 +90,32 @@ class EpiBuilder extends Component {
     }
 
     purchaseContinueHandler = () => {
-        alert('Temporary continue');
+        // alert('Temporary continue');
+        this.setState({loading: true});
+        const order = {
+            items: this.state.items,
+            price: this.state.totalPrice,
+            customer: {
+                name: 'Max Sh',
+                adress: {
+                    street: 'Test Stree1',
+                    zipCode: '34655',
+                    country: 'USA'
+                },
+                email: 'test@test.com',
+            },
+            deliveryMethod: 'faster'
+        }
+        axios
+          .post("/orders.json", order)
+          .then((response) => {
+            this.setState({ loading: false, purchasing: false });
+            // console.log(response))
+          })
+          .catch((error) => {
+            this.setState({ loading: false, purchasing: false });
+            // console.log(error))
+          });
     }
 
     render () {
@@ -87,30 +127,49 @@ class EpiBuilder extends Component {
             disabledInfo[key] = disabledInfo[key] <= 0;
         }
 
+        let orderSummary = null;
+        let epidem = this.state.error ? <p>Items can't be loaded!</p> : <Spinner />;
+
+        if (this.state.items) {
+          epidem = (
+            <Aux>
+              <Epidemiology items={this.state.items} />
+              <BuildControls
+                itemAdded={this.addItemHandler}
+                itemRemove={this.removeItemHandler}
+                disabled={disabledInfo}
+                purchasable={this.state.purchasable}
+                ordered={this.purchaseHandler}
+                value={this.state.totalPrice}
+              />
+            </Aux>
+          );
+          orderSummary = (
+            <OrderSummary
+              items={this.state.items}
+              value={this.state.totalPrice}
+              generationCancelled={this.purchaseCancelHandler}
+              generationContinued={this.purchaseContinueHandler}
+            />
+          );
+        }
+
+        if (this.state.loading) {
+            orderSummary = <Spinner />;
+        }
+
         return (
           <Aux>
             <Modal
               show={this.state.purchasing}
               modalClosed={this.purchaseCancelHandler}
             >
-              <OrderSummary 
-                    items={this.state.items} 
-                    value={this.state.totalPrice}
-                    generationCancelled={this.purchaseCancelHandler}
-                    generationContinued={this.purchaseContinueHandler}/>
+              {orderSummary}
             </Modal>
-            <Epidemiology items={this.state.items} />
-            <BuildControls
-              itemAdded={this.addItemHandler}
-              itemRemove={this.removeItemHandler}
-              disabled={disabledInfo}
-              purchasable={this.state.purchasable}
-              ordered={this.purchaseHandler}
-              value={this.state.totalPrice}
-            />
+            {epidem}
           </Aux>
         );
     }
 }
 
-export default EpiBuilder;
+export default withErrorHandler(EpiBuilder, axios);
