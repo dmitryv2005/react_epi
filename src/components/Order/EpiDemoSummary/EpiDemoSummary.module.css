@@ -1,0 +1,11 @@
+.EpiDemoSummary {
+    text-align: center;
+    width: 80%;
+    margin: auto;
+}
+
+@media (mon-width: 600px) {
+    .EpiDemoSummary {
+        width: 500px;
+    }
+}

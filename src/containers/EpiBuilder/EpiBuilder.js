@@ -90,32 +90,18 @@ class EpiBuilder extends Component {
     }
 
     purchaseContinueHandler = () => {
-        // alert('Temporary continue');
-        this.setState({loading: true});
-        const order = {
-            items: this.state.items,
-            price: this.state.totalPrice,
-            customer: {
-                name: 'Max Sh',
-                adress: {
-                    street: 'Test Stree1',
-                    zipCode: '34655',
-                    country: 'USA'
-                },
-                email: 'test@test.com',
-            },
-            deliveryMethod: 'faster'
+        const queryParams = [];
+        for(let i in this.state.items) {
+            queryParams.push(encodeURIComponent(i) + '=' + encodeURIComponent(this.state.items[i]));
         }
-        axios
-          .post("/orders.json", order)
-          .then((response) => {
-            this.setState({ loading: false, purchasing: false });
-            // console.log(response))
-          })
-          .catch((error) => {
-            this.setState({ loading: false, purchasing: false });
-            // console.log(error))
-          });
+        queryParams.push('price=' + this.state.totalPrice);
+        const queryString = queryParams.join('&');
+
+        this.props.history.push({
+            pathname: '/demo', 
+            search: '?' + queryString
+        });
+
     }
 
     render () {
