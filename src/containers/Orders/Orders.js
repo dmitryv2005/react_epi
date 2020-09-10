@@ -36,6 +36,7 @@ class Orders extends Component {
                     <Order  key={order.id}
                             items={order.items} 
                             price={order.price} 
+                            orderInfo={order.orderInfo}
                             currDate={order.currentDate} />
                 ))}
             </div>

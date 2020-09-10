@@ -3,7 +3,9 @@ import React from 'react';
 import classes from './Order.module.css';
 
 const order = (props) => {
-    const dt = new Date(props.currDate);
+    let dt = new Date(props.currDate);
+    // console.log(props.orderInfo);
+
     const items  = [];
 
     for (let itemName in props.items) {
