@@ -1,44 +1,30 @@
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 
 import Aux from '../../hoc/Auxary/Auxary';
 import Epidemiology from '../../components/Epidemiology/Epidemiology';
 import BuildControls from '../../components/Epidemiology/BuildControls/BuildControls';
 import Modal from '../../components/UI/Modal/Modal';
 import OrderSummary from '../../components/Epidemiology/OrderSummary/OrderSummary';
-import axios from '../../axios-orders';
-import withErrorHandler from '../../hoc/WithErrorHandler/withErrorHandler';
 import Spinner from '../../components/UI/Spinner/Spinner';
-
-const ITEMS_PRICES = {
-    salad: 0.5,
-    cheese: 0.4,
-    meat: 1.3,
-    bacon: 0.7
-};
+import withErrorHandler from '../../hoc/WithErrorHandler/withErrorHandler';
+import axios from '../../axios-orders';
+import * as actionTypes from '../../store/actions';
 
 class EpiBuilder extends Component {
     state = {
-        // items: {
-        //     salad: 1,
-        //     bacon: 1,
-        //     cheese: 2,
-        //     meat: 1
-        // },
-        itesm: null,
-        totalPrice: 4,
-        purchasable: true,
         purchasing: false,
         loading: false,
         error: false
     }
 
     componentDidMount () {
-        axios.get('https://react-my-first-project-1679c.firebaseio.com/Itesms.json')
-            .then(response => {
-                this.setState({items: response.data})
-            }).catch(error => {
-                this.setState({error: true})
-            });
+        // axios.get('https://react-my-first-project-1679c.firebaseio.com/Itesms.json')
+        //     .then(response => {
+        //         this.setState({items: response.data})
+        //     }).catch(error => {
+        //         this.setState({error: true})
+        //     });
     }
 
     updatePurchaseState (items) {
@@ -47,38 +33,7 @@ class EpiBuilder extends Component {
         }).reduce((sum, el) => {
             return sum + el;
         },0);
-        this.setState({purchasable: sum > 0});
-    }
-
-    addItemHandler = (type) => {
-        const oldCount = this.state.items[type];
-        const updateCount = oldCount + 1;
-        const updatedItems = { 
-            ...this.state.items
-        }
-        updatedItems[type] = updateCount;
-        const priceAddition = ITEMS_PRICES[type];
-        const oldValue = this.state.totalPrice;
-        const newValue = oldValue + priceAddition;
-        this.setState({totalPrice: newValue, items: updatedItems});
-        this.updatePurchaseState(updatedItems);
-    }
-
-    removeItemHandler = (type) => {
-        const oldCount = this.state.items[type];
-        if(oldCount <= 0) {
-            return;
-        }
-        const updateCount = oldCount - 1;
-        const updatedItems = { 
-            ...this.state.items
-        }
-        updatedItems[type] = updateCount;
-        const priceDeduction = ITEMS_PRICES[type];
-        const oldValue = this.state.totalPrice;
-        const newValue = oldValue - priceDeduction;
-        this.setState({totalPrice: newValue, items: updatedItems});
-        this.updatePurchaseState(updatedItems);
+        return sum > 0;
     }
 
     purchaseHandler = () => {
@@ -90,23 +45,13 @@ class EpiBuilder extends Component {
     }
 
     purchaseContinueHandler = () => {
-        const queryParams = [];
-        for(let i in this.state.items) {
-            queryParams.push(encodeURIComponent(i) + '=' + encodeURIComponent(this.state.items[i]));
-        }
-        queryParams.push('price=' + this.state.totalPrice);
-        const queryString = queryParams.join('&');
-
-        this.props.history.push({
-            pathname: '/demo', 
-            search: '?' + queryString
-        });
-
+        this.props.history.push('/demo');
     }
 
     render () {
         const disabledInfo = {
-            ...this.state.items
+            // ...this.state.items  // redux replacment
+            ...this.props.its
         }
 
         for ( let key in disabledInfo) {
@@ -116,24 +61,24 @@ class EpiBuilder extends Component {
         let orderSummary = null;
         let epidem = this.state.error ? <p>Items can't be loaded!</p> : <Spinner />;
 
-        if (this.state.items) {
+        if (this.props.its) {
           epidem = (
             <Aux>
-              <Epidemiology items={this.state.items} />
+              <Epidemiology items={this.props.its} />
               <BuildControls
-                itemAdded={this.addItemHandler}
-                itemRemove={this.removeItemHandler}
+                itemAdded={this.props.onItemAdded}
+                itemRemove={this.props.onItemRemoved}
                 disabled={disabledInfo}
-                purchasable={this.state.purchasable}
+                purchasable={this.updatePurchaseState(this.props.its)}
                 ordered={this.purchaseHandler}
-                value={this.state.totalPrice}
+                value={this.props.price}
               />
             </Aux>
           );
           orderSummary = (
             <OrderSummary
-              items={this.state.items}
-              value={this.state.totalPrice}
+              items={this.props.its}
+              value={this.props.price}
               generationCancelled={this.purchaseCancelHandler}
               generationContinued={this.purchaseContinueHandler}
             />
@@ -158,4 +103,18 @@ class EpiBuilder extends Component {
     }
 }
 
-export default withErrorHandler(EpiBuilder, axios);
+const mapStateToProps = state =>  {
+    return {
+        its: state.items,
+        price: state.totalPrice
+    }
+}
+
+const mapDispatchToProps =  dispatch => {
+    return {
+        onItemAdded: (itName) => dispatch({type: actionTypes.ADD_ITEM, itemName: itName}),
+        onItemRemoved: (itName) => dispatch({type: actionTypes.REMOVE_ITEM, itemName: itName})
+    }
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(withErrorHandler(EpiBuilder, axios));
