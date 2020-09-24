@@ -8,17 +8,16 @@ import Modal from '../../components/UI/Modal/Modal';
 import OrderSummary from '../../components/Epidemiology/OrderSummary/OrderSummary';
 import Spinner from '../../components/UI/Spinner/Spinner';
 import withErrorHandler from '../../hoc/WithErrorHandler/withErrorHandler';
+import * as actions from '../../store/actions/index';
 import axios from '../../axios-orders';
-import * as actionTypes from '../../store/actions';
 
 class EpiBuilder extends Component {
     state = {
         purchasing: false,
-        loading: false,
-        error: false
     }
 
     componentDidMount () {
+      this.props.onInitItems();
         // axios.get('https://react-my-first-project-1679c.firebaseio.com/Itesms.json')
         //     .then(response => {
         //         this.setState({items: response.data})
@@ -45,6 +44,7 @@ class EpiBuilder extends Component {
     }
 
     purchaseContinueHandler = () => {
+        this.props.onInitEpi();
         this.props.history.push('/demo');
     }
 
@@ -59,7 +59,7 @@ class EpiBuilder extends Component {
         }
 
         let orderSummary = null;
-        let epidem = this.state.error ? <p>Items can't be loaded!</p> : <Spinner />;
+        let epidem = this.props.error ? <p>Items can't be loaded!</p> : <Spinner />;
 
         if (this.props.its) {
           epidem = (
@@ -85,10 +85,6 @@ class EpiBuilder extends Component {
           );
         }
 
-        if (this.state.loading) {
-            orderSummary = <Spinner />;
-        }
-
         return (
           <Aux>
             <Modal
@@ -105,15 +101,18 @@ class EpiBuilder extends Component {
 
 const mapStateToProps = state =>  {
     return {
-        its: state.items,
-        price: state.totalPrice
+        its: state.epiBuilder.items,
+        price: state.epiBuilder.totalPrice,
+        error: state.epiBuilder.error
     }
 }
 
 const mapDispatchToProps =  dispatch => {
     return {
-        onItemAdded: (itName) => dispatch({type: actionTypes.ADD_ITEM, itemName: itName}),
-        onItemRemoved: (itName) => dispatch({type: actionTypes.REMOVE_ITEM, itemName: itName})
+        onItemAdded: (itName) => dispatch(actions.addItem(itName)),
+        onItemRemoved: (itName) => dispatch(actions.removeItem(itName)),
+        onInitItems: () => dispatch(actions.initItems()),
+        onInitEpi: () => dispatch(actions.epidemiologyInit())
     }
 }
 

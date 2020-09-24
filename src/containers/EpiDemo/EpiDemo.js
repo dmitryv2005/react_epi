@@ -1,12 +1,12 @@
 import React, { Component } from 'react';
-import { Route } from 'react-router-dom';
+import { Route, Redirect } from 'react-router-dom';
 import { connect } from 'react-redux';
 
 import EpiDemoSummary from '../../components/Order/EpiDemoSummary/EpiDemoSummary';
 import ContactData from './ContactData/ContactData';
 
 class EpiDemo extends Component {
- 
+
     demoCancelledHandler = () => {
         this.props.history.goBack();
     } 
@@ -16,25 +16,33 @@ class EpiDemo extends Component {
     } 
 
     render() {
-        return (
-          <div>
-            <EpiDemoSummary
-              items={this.props.its}
-              demoCancelled={this.demoCancelledHandler}
-              demoContinued={this.demoContinuedHandler}
-            />
-            <Route
-              path={this.props.match.path + "/items-data"}
-              component={ContactData}
-            />
-          </div>
-        );
+        let summary = <Redirect to="/" />
+        if (this.props.its) {
+          const initRedirect = this.props.inited  ? <Redirect to="/"/> : null;
+          summary = (
+            <div>
+              {initRedirect}
+              <EpiDemoSummary
+                items={this.props.its}
+                demoCancelled={this.demoCancelledHandler}
+                demoContinued={this.demoContinuedHandler}
+              />
+              <Route
+                path={this.props.match.path + "/items-data"}
+                component={ContactData}
+              />
+            </div>
+          );
+        }
+
+        return summary;
     }
 }
 
 const mapStateToProps = state => {
   return {
-    its: state.items
+    its: state.epiBuilder.items,
+    inited: state.order.initialaized
   }
 }
 

@@ -6,6 +6,8 @@ import Spinner from '../../../components/UI/Spinner/Spinner';
 import classes from './ContactData.module.css';
 import axios from '../../../axios-orders';
 import Input from '../../../components/UI/Input/Input';
+import withErrorHandler from '../../../hoc/WithErrorHandler/withErrorHandler';
+import * as actions from '../../../store/actions/index';
 
 class ContactData extends Component {
 
@@ -86,7 +88,7 @@ class ContactData extends Component {
             options: [
                 {values: 'fastest', displayValue: 'Fastest'},
                 {values: 'chepest', displayValue: 'Chepest'},
-                {values: 'best', displayValue: 'Best available'},
+                {values: 'Best Available', displayValue: 'Best available'},
                 ]
         },
         validation: {
@@ -109,17 +111,13 @@ class ContactData extends Component {
       },
     },
     formIsValid: false,
-    loading: false
   };
 
   orderHandler = (event) => {
     event.preventDefault();
     const currentDate = new Date();
-    // console.log(this.props.items);
-    this.setState({ loading: true });
 
     const formData = {};
-
     for (let formElementIdentifier in this.state.orderForm) {
         if( formElementIdentifier === 'currentDate' ) {
             formData[formElementIdentifier] = currentDate;
@@ -134,17 +132,8 @@ class ContactData extends Component {
       orderInfo: formData,
       currentDate: currentDate,
      };
-    axios
-      .post("/orders.json", order)
-      .then((response) => {
-        this.setState({ loading: false });
-        this.props.history.push("/");
-        // console.log(response))
-      })
-      .catch((error) => {
-        this.setState({ loading: false });
-        // console.log(error))
-      });
+
+     this.props.onOrderEpi(order);
   };
 
   checkValidity(value, rules) {
@@ -230,7 +219,7 @@ class ContactData extends Component {
       </form>
     );
 
-    if (this.state.loading) {
+    if (this.props.loading) {
       form = <Spinner />;
     }
 
@@ -245,9 +234,16 @@ class ContactData extends Component {
 
 const mapStateToProps = state => {
   return {
-    its: state.items,
-    price: state.totalPrice
+    its: state.epiBuilder.items,
+    price: state.epiBuilder.totalPrice,
+    loading: state.order.loading
   }
 }
 
-export default connect(mapStateToProps)(ContactData);
+const mapDispatchToProps = (dispatch) => {
+  return {
+    onOrderEpi: (orderData) => dispatch(actions.epidemiology(orderData)),
+  };
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(withErrorHandler(ContactData, axios));
